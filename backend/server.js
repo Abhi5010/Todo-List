@@ -57,7 +57,7 @@ app.post('/api/login', async (req, res) => {
         }
 
        
-        const sql = "SELECT * FROM users WHERE email = ?;
+        const sql = "SELECT * FROM users WHERE email = ?";
         const [rows] = await db.execute(sql, [email]);
 
         // Check if user exists
