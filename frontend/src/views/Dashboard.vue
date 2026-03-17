@@ -62,12 +62,9 @@ async function fetchTasks() {
   error.value = ''
 
   try {
-
-    const userId = user.id
-
-
-    const response = await axios.get(`http://localhost:5000/api/tasks/${userId}`)
-
+    const response = await axios.get('http://localhost:5000/api/tasks', {
+      headers: { Authorization: `Bearer ${user.token}` }
+    })
 
     tasks.value = response.data
   } catch (err) {
@@ -79,13 +76,12 @@ async function fetchTasks() {
 
 async function addTask(taskData) {
   try {
-  
-    const response = await axios.post('http://localhost:5000/api/tasks', {
-      user_id: user.id,
-      title: taskData.title
-    })
+    await axios.post('http://localhost:5000/api/tasks', 
+      { title: taskData.title },
+      { headers: { Authorization: `Bearer ${user.token}` } }
+    )
 
-    tasks.value.push(response.data)
+    await fetchTasks()
   } catch (err) {
     error.value = "Failed to add task"
   }
@@ -94,9 +90,9 @@ async function addTask(taskData) {
 
 async function deleteTask(id) {
   try {
-    // Send request to backend
-    await axios.delete(`http://localhost:5000/api/tasks/${id}`)
-
+    await axios.delete(`http://localhost:5000/api/tasks/${id}`, {
+      headers: { Authorization: `Bearer ${user.token}` }
+    })
 
     tasks.value = tasks.value.filter(t => t.id !== id)
   } catch (err) {
@@ -107,13 +103,13 @@ async function deleteTask(id) {
 
 async function toggleTask(id) {
   try {
-
     const task = tasks.value.find(t => t.id === id)
 
-
-    await axios.put(`http://localhost:5000/api/tasks/${id}`, {
-      completed: !task.completed
-    })
+    await axios.put(
+      `http://localhost:5000/api/tasks/${id}`,
+      { completed: !task.completed },
+      { headers: { Authorization: `Bearer ${user.token}` } }
+    )
 
     task.completed = !task.completed
   } catch (err) {
