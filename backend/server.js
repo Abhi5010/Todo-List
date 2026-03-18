@@ -44,7 +44,15 @@ const verifyToken = (req, res, next) => {
 
     } catch (err) {
 
-        return res.status(403).json({ message: "Invalid or expired token" });
+        if (err.name === "TokenExpiredError") {
+            return res.status(401).json({ message: "Token expired. Please login again." });
+        }
+
+        if (err.name === "JsonWebTokenError") {
+            return res.status(403).json({ message: "Invalid token." });
+        }
+
+        return res.status(500).json({ message: "Authentication error." });
     }
 };
 
