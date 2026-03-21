@@ -1,16 +1,16 @@
 require('dotenv').config();
 
 const express = require('express');
-const mysql = require('mysql2/promise'); 
+const mysql = require('mysql2/promise');
 const cors = require('cors');
-const bcrypt = require('bcrypt'); 
+const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use(cors()); 
-app.use(express.json()); 
+app.use(cors());
+app.use(express.json());
 
 
 const db = mysql.createPool({
@@ -22,7 +22,6 @@ const db = mysql.createPool({
 
 const JWT_SECRET = process.env.JWT_SECRET;
 
-//JWT AUTH MIDDLEWARE
 
 const verifyToken = (req, res, next) => {
 
@@ -59,12 +58,25 @@ const verifyToken = (req, res, next) => {
 
 app.post('/api/register', async (req, res) => {
     try {
-      
+
         const { name, email, password } = req.body;
 
-        
+
         if (!name || !email || !password) {
             return res.status(400).json({ message: "Please fill all fields" });
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: "Please enter a valid email address" });
+        }
+
+        if (password.length < 6) {
+            return res.status(400).json({ message: "Password must be at least 6 characters" });
+        }
+
+        if (name.trim().length < 2) {
+            return res.status(400).json({ message: "Name must be at least 2 characters" });
         }
 
         const checkUser = "SELECT id FROM users WHERE email = ?";
@@ -73,19 +85,19 @@ app.post('/api/register', async (req, res) => {
             return res.status(400).json({ message: "Email already registered" });
         }
 
-       
+
         const hashedPassword = await bcrypt.hash(password, 10);
 
         const sql = "INSERT INTO users (name, email, password) VALUES (?, ?, ?)";
-        
-        
+
+
         await db.execute(sql, [name, email, hashedPassword]);
 
-        
+
         res.status(201).json({ message: "User registered successfully" });
 
     } catch (error) {
-        
+
         console.error(error);
         res.status(500).json({ error: "Server error during registration" });
     }
@@ -100,11 +112,16 @@ app.post('/api/login', async (req, res) => {
             return res.status(400).json({ message: "Please provide email and password" });
         }
 
-       
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: "Please enter a valid email address" });
+        }
+
+
         const sql = "SELECT * FROM users WHERE email = ?";
         const [rows] = await db.execute(sql, [email]);
 
-        // Check if user exists
+
         if (rows.length === 0) {
             return res.status(400).json({ message: "Invalid Email or Password" });
         }
@@ -117,7 +134,7 @@ app.post('/api/login', async (req, res) => {
             return res.status(400).json({ message: "Wrong password" });
         }
 
-        // CREATE JWT TOKEN 
+
         const token = jwt.sign(
             { id: user.id },
             JWT_SECRET,
@@ -141,7 +158,7 @@ app.post('/api/login', async (req, res) => {
 
 app.get('/api/tasks', verifyToken, async (req, res) => {
     try {
-      
+
         const sql = "SELECT * FROM tasks WHERE user_id = ?";
         const [rows] = await db.execute(sql, [req.userId]);
 
@@ -158,18 +175,18 @@ app.post('/api/tasks', verifyToken, async (req, res) => {
     try {
         const { title } = req.body;
 
-        
+
         if (!title) {
             return res.status(400).json({ message: "Please provide title" });
         }
 
-    
+
         const sql = "INSERT INTO tasks (user_id, title, completed) VALUES (?, ?, ?)";
         await db.execute(sql, [req.userId, title, false]);
 
-        // Success!
+
         res.status(201).json({ message: "Task added successfully" });
-        
+
 
     } catch (error) {
         console.error(error);
@@ -178,7 +195,7 @@ app.post('/api/tasks', verifyToken, async (req, res) => {
 });
 
 
-app.put('/api/tasks/:id', verifyToken, async (req, res) => {
+app.patch('/api/tasks/:id', verifyToken, async (req, res) => {
     try {
         const { id } = req.params;
         const { completed } = req.body;
