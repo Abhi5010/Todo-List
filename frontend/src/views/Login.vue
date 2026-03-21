@@ -22,17 +22,15 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios' 
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
-
+const authStore = useAuthStore()
 
 const email = ref('')
 const password = ref('')
-
 const error = ref('')
 const loading = ref(false)
-
 
 async function login() {
 
@@ -46,29 +44,16 @@ async function login() {
   loading.value = true
 
   try {
-    
-    const response = await axios.post('http://localhost:5000/api/login', {
-      email: email.value,
-      password: password.value
-    })
-
-    
-    if (response.status === 200) {
-      
-      localStorage.setItem('user', JSON.stringify(response.data))
-      
-      
-      router.push('/dashboard')
-    }
+    await authStore.login(email.value, password.value)
+    router.push('/dashboard')
   } catch (err) {
-    
     error.value = err.response?.data?.message || "Login failed"
   } finally {
-    
     loading.value = false
   }
 }
 </script>
+
 
 <style scoped>
 .container {

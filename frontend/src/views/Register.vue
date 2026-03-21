@@ -22,57 +22,42 @@
 <script setup>
 import { ref } from 'vue'
 import { useRouter } from 'vue-router'
-import axios from 'axios'
+import { useAuthStore } from '../stores/auth'
 
 const router = useRouter()
-
+const authStore = useAuthStore()
 
 const name = ref('')
 const email = ref('')
 const password = ref('')
 const confirmPassword = ref('')
 
-
 const error = ref('')
 const loading = ref(false)
-
 
 async function register() {
 
   error.value = ''
-
 
   if (!name.value || !email.value || !password.value) {
     error.value = "Please fill all fields"
     return
   }
 
- 
   if (password.value !== confirmPassword.value) {
     error.value = "Passwords do not match"
     return
   }
 
-
   loading.value = true
 
   try {
- 
-    const response = await axios.post('http://localhost:5000/api/register', {
-      name: name.value,
-      email: email.value,
-      password: password.value
-    })
-
-    if (response.status === 201) {
-      alert("Registered successfully!")
-      router.push('/')
-    }
+    await authStore.register(name.value, email.value, password.value)
+    alert("Registered successfully!")
+    router.push('/')
   } catch (err) {
-  
     error.value = err.response?.data?.message || "Registration failed"
   } finally {
-   
     loading.value = false
   }
 }
