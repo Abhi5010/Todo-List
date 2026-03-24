@@ -2,13 +2,11 @@
   <div class="container">
     <h2>Dashboard</h2>
 
-    <div v-if="error" class="error">{{error}}</div>
+    <div v-if="taskStore.error" class="error">{{ taskStore.error }}</div>
 
+    <div v-if="taskStore.loading" class="loading">Loading tasks...</div>
 
-    <div v-if="loading" class="loading">Loading tasks...</div>
-
-
-    <TaskForm @add="addTask" />
+    <TaskForm @add="(taskData) => taskStore.addTask(taskData.title)" />
 
     <div class="filters">
       <button @click="filter='all'" :class="{ active: filter === 'all' }">All</button>
@@ -16,7 +14,7 @@
       <button @click="filter='pending'" :class="{ active: filter === 'pending' }">Pending</button>
     </div>
 
-    <div v-if="!loading && filteredTasks.length === 0" class="no-tasks">
+    <div v-if="!taskStore.loading && filteredTasks.length === 0" class="no-tasks">
       No tasks yet. Add one above!
     </div>
 
@@ -24,109 +22,43 @@
       v-for="task in filteredTasks"
       :key="task.id"
       :task="task"
-      @delete="deleteTask"
-      @toggle="toggleTask"
+      @delete="taskStore.deleteTask"
+      @toggle="taskStore.toggleTask"
     />
   </div>
 </template>
 
+
 <script setup>
 import { ref, computed, onMounted } from 'vue'
-import axios from 'axios'
+import { useAuthStore } from '../stores/auth'
+import { useTaskStore } from '../stores/task'
 import TaskForm from '../components/TaskForm.vue'
 import TaskItem from '../components/TaskItem.vue'
 
+const authStore = useAuthStore()
+const taskStore = useTaskStore()
 
-const tasks = ref([])
 const filter = ref('all')
-const loading = ref(false)
-const error = ref('')
 
-
-const user = JSON.parse(localStorage.getItem('user'))
-
-
-if (!user) {
-
+if (!authStore.isLoggedIn) {
   window.location.href = '/'
 }
 
-
 onMounted(async () => {
-  await fetchTasks()
+  await taskStore.fetchTasks()
 })
-
-
-async function fetchTasks() {
-  loading.value = true
-  error.value = ''
-
-  try {
-    const response = await axios.get('http://localhost:5000/api/tasks', {
-      headers: { Authorization: `Bearer ${user.token}` }
-    })
-
-    tasks.value = response.data
-  } catch (err) {
-    error.value = "Failed to load tasks"
-  } finally {
-    loading.value = false
-  }
-}
-
-async function addTask(taskData) {
-  try {
-    await axios.post('http://localhost:5000/api/tasks', 
-      { title: taskData.title },
-      { headers: { Authorization: `Bearer ${user.token}` } }
-    )
-
-    await fetchTasks()
-  } catch (err) {
-    error.value = "Failed to add task"
-  }
-}
-
-
-async function deleteTask(id) {
-  try {
-    await axios.delete(`http://localhost:5000/api/tasks/${id}`, {
-      headers: { Authorization: `Bearer ${user.token}` }
-    })
-
-    tasks.value = tasks.value.filter(t => t.id !== id)
-  } catch (err) {
-    error.value = "Failed to delete task"
-  }
-}
-
-
-async function toggleTask(id) {
-  try {
-    const task = tasks.value.find(t => t.id === id)
-
-    await axios.put(
-      `http://localhost:5000/api/tasks/${id}`,
-      { completed: !task.completed },
-      { headers: { Authorization: `Bearer ${user.token}` } }
-    )
-
-    task.completed = !task.completed
-  } catch (err) {
-    error.value = "Failed to update task"
-  }
-}
 
 const filteredTasks = computed(() => {
   if (filter.value === 'completed') {
-    return tasks.value.filter(t => t.completed)
+    return taskStore.tasks.filter(t => t.completed)
   }
 
   if (filter.value === 'pending') {
-    return tasks.value.filter(t => !t.completed)
+    return taskStore.tasks.filter(t => !t.completed)
   }
 
-  return tasks.value
+  return taskStore.tasks
 })
 </script>
 
