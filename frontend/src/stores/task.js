@@ -1,75 +1,100 @@
 import { defineStore } from 'pinia'
-import { ref } from 'vue'
 import axios from 'axios'
 import { useAuthStore } from './auth'
 
-export const useTaskStore = defineStore('task', () => {
+export const useTaskStore = defineStore('task', {
+  state: () => ({
+    tasks: [],
+    loading: false,
+    error: '',
+  }),
 
-  // STATE
-  const tasks = ref([])
-  const loading = ref(false)
-  const error = ref('')
+  actions: {
+    async fetchTasks() {
+      const authStore = useAuthStore()
+      this.loading = true
+      this.error = ''
 
-  // ACTIONS
-  async function fetchTasks() {
-    const authStore = useAuthStore()
-    loading.value = true
-    error.value = ''
+      try {
+        const response = await axios.get('http://localhost:5000/api/tasks', {
+          headers: {
+            Authorization: `Bearer ${authStore.token}`,
+          },
+        })
 
-    try {
-      const response = await axios.get('http://localhost:5000/api/tasks', {
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
-      tasks.value = response.data
-    } catch (err) {
-      error.value = 'Failed to load tasks'
-    } finally {
-      loading.value = false
-    }
-  }
+        this.tasks = response.data
+        return response.data
+      } catch (err) {
+        this.error = 'Failed to load tasks'
+        throw err
+      } finally {
+        this.loading = false
+      }
+    },
 
-  async function addTask(title) {
-    const authStore = useAuthStore()
+    async addTask(title) {
+      const authStore = useAuthStore()
+      this.error = ''
 
-    try {
-      await axios.post('http://localhost:5000/api/tasks',
-        { title },
-        { headers: { Authorization: `Bearer ${authStore.token}` } }
-      )
-      await fetchTasks()
-    } catch (err) {
-      error.value = 'Failed to add task'
-    }
-  }
+      try {
+        await axios.post(
+          'http://localhost:5000/api/tasks',
+          { title },
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+            },
+          }
+        )
 
-  async function deleteTask(id) {
-    const authStore = useAuthStore()
+        await this.fetchTasks()
+      } catch (err) {
+        this.error = 'Failed to add task'
+        throw err
+      }
+    },
 
-    try {
-      await axios.delete(`http://localhost:5000/api/tasks/${id}`, {
-        headers: { Authorization: `Bearer ${authStore.token}` }
-      })
-      tasks.value = tasks.value.filter(t => t.id !== id)
-    } catch (err) {
-      error.value = 'Failed to delete task'
-    }
-  }
+    async deleteTask(id) {
+      const authStore = useAuthStore()
+      this.error = ''
 
-  async function toggleTask(id) {
-    const authStore = useAuthStore()
-    const task = tasks.value.find(t => t.id === id)
+      try {
+        await axios.delete(`http://localhost:5000/api/tasks/${id}`, {
+          headers: {
+            Authorization: `Bearer ${authStore.token}`,
+          },
+        })
 
-    try {
-      await axios.patch(
-        `http://localhost:5000/api/tasks/${id}`,
-        { completed: !task.completed },
-        { headers: { Authorization: `Bearer ${authStore.token}` } }
-      )
-      task.completed = !task.completed
-    } catch (err) {
-      error.value = 'Failed to update task'
-    }
-  }
+        this.tasks = this.tasks.filter((t) => t.id !== id)
+      } catch (err) {
+        this.error = 'Failed to delete task'
+        throw err
+      }
+    },
 
-  return { tasks, loading, error, fetchTasks, addTask, deleteTask, toggleTask }
+    async toggleTask(id) {
+      const authStore = useAuthStore()
+      this.error = ''
+
+      const task = this.tasks.find((t) => t.id === id)
+      if (!task) return
+
+      try {
+        await axios.patch(
+          `http://localhost:5000/api/tasks/${id}`,
+          { completed: !task.completed },
+          {
+            headers: {
+              Authorization: `Bearer ${authStore.token}`,
+            },
+          }
+        )
+
+        task.completed = !task.completed
+      } catch (err) {
+        this.error = 'Failed to update task'
+        throw err
+      }
+    },
+  },
 })
