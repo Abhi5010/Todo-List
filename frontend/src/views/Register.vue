@@ -1,22 +1,57 @@
 <template>
-  <div class="container">
-    <h2>Register</h2>
+  <v-container class="fill-height flex justify-center items-center h-screen">
+    <v-card class="pa-8 w-full max-w-sm rounded-xl shadow-lg">
+      <v-card-title class="text-center text-2xl font-bold mb-4">Register</v-card-title>
+      
+      <v-alert v-if="error" type="error" variant="tonal" class="mb-4">{{ error }}</v-alert>
 
-    <!-- Show error message if there is one -->
-    <div v-if="error" class="error">{{ error }}</div>
+      <v-form @submit.prevent="register">
+        <v-text-field
+          v-model="name"
+          label="Name"
+          variant="outlined"
+          class="mb-2"
+        ></v-text-field>
 
-    <input v-model="name" placeholder="Name" />
-    <input v-model="email" placeholder="Email" />
-    <input v-model="password" type="password" placeholder="Password" />
-    <input v-model="confirmPassword" type="password" placeholder="Confirm Password" />
+        <v-text-field
+          v-model="email"
+          label="Email"
+          variant="outlined"
+          class="mb-2"
+        ></v-text-field>
 
-    <!-- Show loading spinner while sending data -->
-    <button @click="register" :disabled="loading">
-      {{ loading ? 'Registering...' : 'Register' }}
-    </button>
+        <v-text-field
+          v-model="password"
+          label="Password"
+          type="password"
+          variant="outlined"
+          class="mb-2"
+        ></v-text-field>
 
-    <router-link to="/">Back to Login</router-link>
-  </div>
+        <v-text-field
+          v-model="confirmPassword"
+          label="Confirm Password"
+          type="password"
+          variant="outlined"
+          class="mb-4"
+        ></v-text-field>
+        
+        <v-btn
+          type="submit"
+          color="primary"
+          block
+          size="large"
+          :loading="loading"
+        >
+          Register
+        </v-btn>
+      </v-form>
+
+      <div class="mt-4 text-center text-sm">
+        <router-link to="/" class="text-indigo-600 font-medium hover:underline">Back to Login</router-link>
+      </div>
+    </v-card>
+  </v-container>
 </template>
 
 <script setup>
@@ -36,7 +71,6 @@ const error = ref('')
 const loading = ref(false)
 
 async function register() {
-
   error.value = ''
 
   if (!name.value || !email.value || !password.value) {
@@ -56,83 +90,9 @@ async function register() {
     alert("Registered successfully!")
     router.push('/')
   } catch (err) {
-    error.value = err.response?.data?.message || "Registration failed"
+    error.value = err.response?.data?.message || err.message || "Registration failed"
   } finally {
     loading.value = false
   }
 }
 </script>
-
-<style scoped>
-.container {
-  width: 350px;
-  margin: 100px auto;
-  padding: 30px;
-  border-radius: 12px;
-  background: white;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
-  text-align: center;
-  font-family: Arial, sans-serif;
-}
-
-h2 {
-  margin-bottom: 20px;
-  color: #333;
-}
-
-input {
-  width: 100%;
-  padding: 10px;
-  margin: 8px 0;
-  border-radius: 6px;
-  border: 1px solid #ccc;
-  font-size: 14px;
-  transition: 0.2s ease;
-}
-
-input:focus {
-  border-color: #42b983;
-  outline: none;
-  box-shadow: 0 0 0 2px rgba(66, 185, 131, 0.2);
-}
-
-button {
-  width: 100%;
-  padding: 10px;
-  margin-top: 12px;
-  border: none;
-  border-radius: 6px;
-  background-color: #42b983;
-  color: white;
-  font-size: 15px;
-  cursor: pointer;
-  transition: 0.2s ease;
-}
-
-button:hover {
-  background-color: #369f6e;
-}
-
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-a {
-  display: block;
-  margin-top: 15px;
-  text-decoration: none;
-  color: #42b983;
-  font-size: 14px;
-}
-
-a:hover {
-  text-decoration: underline;
-}
-
-.error {
-  color: red;
-  margin-bottom: 10px;
-  font-size: 14px;
-}
-</style>
